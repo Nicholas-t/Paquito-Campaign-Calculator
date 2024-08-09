@@ -1,120 +1,144 @@
-
 import streamlit as st
-import numpy as np
-import plotly.figure_factory as ff
-import random 
-hide_streamlit_style = """
+import math
+# Custom CSS to match Paquito.ai style more closely
+custom_css = """
 <style>
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-.stApp {
-    background-color: black
-}
-
-[data-testid='stVerticalBlock'] > .element-container > div[class*=Input] {
-    padding: 10px;
-    max-width: 90%;
-    color: rgba(255,255,255,0.588);
-    border: solid 1px #FAFAFA;
-    border-radius: 20px;
-    background-color: transparent;
-    width: 100%;
-}
-[data-testid='stMarkdownContainer']{
-  color: rgb(238,174,202);
-}
-div.stButton button [data-testid='stMarkdownContainer']{
-  color: black;
-}
-div.stButton button {
-    color: black !important;
-    background: rgb(238,174,202);
-    background: linear-gradient(90deg, rgba(238,174,202,1) 0%, rgba(148,187,233,1) 100%);
-    -webkit-box-shadow: 1px 9px 38px 0px rgb(238,174,202); 
-    box-shadow: 1px 9px 38px 0px rgb(238,174,202);   
-    width: 100%;
-    font-size: 20px;
-    font-weight: 400;
-    padding: 10px 10px;
-    border-radius: 20px;
-    cursor: pointer;
-    margin-bottom: 10px;
-    transition: 0.3s;
-}
-div.stButton  button:hover{
-    background: white !important;
-    color: black;
-    border: 2px solid #E8ACAC;
-}
-
-[data-testid='stMetricValue']{
-    color: white;
-}
+    body {
+        color: #FFFFFF;
+        background-color: #1A1A1A;
+        font-family: 'Arial', sans-serif;
+    }
+    .stApp {
+        background-color: #1A1A1A;
+    }
+    h1 {
+        color: #4A4A4A;
+        font-size: 36px;
+        font-weight: normal;
+        margin-bottom: 30px;
+    }
+    .input-label {
+        color: #B19CD9;
+        font-size: 14px;
+        margin-bottom: 5px;
+    }
+    .stSelectbox > div > div > select,
+    .stNumberInput > div > div > input {
+        color: #FFFFFF;
+        background-color: #2E2E2E;
+        border: 1px solid #444;
+        border-radius: 25px;
+        font-size: 16px;
+        padding: 10px 15px;
+    }
+    .stButton > button {
+        color: #000000;
+        background: linear-gradient(90deg, #EEA4CA 0%, #94BBE9 100%);
+        border: none;
+        border-radius: 25px;
+        font-size: 18px;
+        padding: 12px 24px;
+        width: 100%;
+        transition: all 0.3s ease;
+    }
+    .stButton > button:hover {
+        opacity: 0.8;
+        box-shadow: 0 0 15px rgba(238, 164, 202, 0.5);
+    }
+    .stExpander {
+        background-color: #2E2E2E;
+        border: 1px solid #444;
+        border-radius: 15px;
+        overflow: hidden;
+    }
+    .title {
+        color: #B19CD9;
+        font-size: 16px;
+        font-weight: normal;
+        margin-bottom: 10px;
+    }
 </style>
 """
+st.set_page_config(page_title="ROI Calculator", layout="wide")
+st.markdown(custom_css, unsafe_allow_html=True)
 
+st.markdown("<h1>ROI Calculator</h1>", unsafe_allow_html=True)
 
-import math
-def calculate_num_mailbox(total_email):
-    if (total_email > 1000):
-        num_need = 5
-        return num_need + math.ceil(total_email / 10000 * 15)
-    else:
-        return 5
+# Number of leads
+st.markdown('<p class="title">Number of leads</p>', unsafe_allow_html=True)
+lead_options = [10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000]
+num_leads = st.selectbox("", options=lead_options, format_func=lambda x: f"{x:,}")
 
-st.markdown(hide_streamlit_style, unsafe_allow_html=True) 
+# Number emails per lead
+st.markdown('<p class="title">Number emails per lead</p>', unsafe_allow_html=True)
+emails_per_lead = st.number_input("", min_value=1, max_value=10, value=2, step=1)
 
-st.title("ROI Calculator") 
+# Campaign duration in months
+st.markdown('<p class="title">Campaign duration in months</p>', unsafe_allow_html=True)
+campaign_duration = st.number_input("", min_value=1, max_value=12, value=6, step=1)
 
-NUM_OF_LEADS = st.number_input("Number of leads", step=1, value=10000, max_value=100000)
-EMAILS_PER_LEAD = st.number_input("Number emails per lead", step=1, value=4)
-CAMPAIGN_DURATION = st.number_input("Campaign duration in months", step=1, value=6)
+# Social media to target
+st.markdown('<p class="title">Social media to target</p>', unsafe_allow_html=True)
+social_media_campaign = st.selectbox("", ["Linkedin", "Instagram", "Twitter"])
 
-SOCIAL_MEDIA_COST_DIC = {
-    "Linkedin" : 0.005,
-    "Instagram" : 0.003,
-    "Twitter" : 0.002
-}
-
-SOCIAL_MEDIA_CAMPAIGN_TO_INCLUDE = st.selectbox("Social media to target", SOCIAL_MEDIA_COST_DIC.keys())
-
-
+# Advanced Settings
 with st.expander("Advanced Settings"):
-    WORKING_DAYS = st.number_input("Working days per month", value=20)
-    EMAIL_LIMIT_PER_DAY = st.number_input("Working days per month", value=30)
-    WARMUP_PERIOD = st.number_input("Warm up period in weeks", value=3, min_value=2)
-    MAILBOXES_PER_DOMAIN = st.number_input("Mailboxes / domain",  value=2)
-    COST_PER_MAILBOX_PER_MONTH = st.number_input("Cost per mailbox / month", value=3, disabled=True)
-    COST_PER_DOMAIN = st.number_input("Cost per domain", value=13, disabled=True)
+    working_days = st.number_input("Working days per month", min_value=1, max_value=31, value=20, step=1)
+    email_limit_per_day = st.number_input("Emails limit per day", min_value=1, max_value=1000, value=30, step=10)
+    warmup_period = st.number_input("Warm up period in weeks", min_value=1, max_value=12, value=3, step=1)
+    mailboxes_per_domain = st.number_input("Mailboxes / domain", min_value=1, max_value=10, value=2, step=1)
+    cost_per_mailbox_per_month = st.number_input("Cost per mailbox / month", min_value=0, max_value=100, value=3, step=1)
+    cost_per_domain = st.number_input("Cost per domain", min_value=0, max_value=100, value=13, step=1)
 
+def calculate_roi():
+    total_emails = num_leads * emails_per_lead
+    campaign_duration_in_days = campaign_duration * working_days
+    emails_per_day = total_emails / campaign_duration_in_days
+    
+    mailboxes_needed = math.ceil(emails_per_day / email_limit_per_day)
+    domains_needed = math.ceil(mailboxes_needed / mailboxes_per_domain)
+    
+    monthly_cost_mailboxes = mailboxes_needed * cost_per_mailbox_per_month
+    monthly_cost_domains = domains_needed * cost_per_domain
+    
+    total_monthly_cost = monthly_cost_mailboxes + monthly_cost_domains
+    
+    # Apply 80% margin
+    monthly_monthly_paying_client_pricing = total_monthly_cost * 3
+    
+    return {
+        "total_emails": total_emails,
+        "emails_per_day": int(emails_per_day),
+        #"mailboxes_needed": mailboxes_needed,
+        #"domains_needed": domains_needed,
+        "monthly_cost": total_monthly_cost,
+        "monthly_monthly_paying_client_pricing": monthly_monthly_paying_client_pricing
+    }
 
 if st.button("Calculate ROI"):
-    TOTAL_EMAILS = NUM_OF_LEADS * EMAILS_PER_LEAD
-    CAMPAIGN_DURATION_IN_DAYS_POST_WARM_UP = CAMPAIGN_DURATION * WORKING_DAYS - WARMUP_PERIOD * 5
-    EMAILS_PER_SENDING_DAY = TOTAL_EMAILS / CAMPAIGN_DURATION_IN_DAYS_POST_WARM_UP
-
-    NUMBER_EMAILS_SENT_PER_MONTH = TOTAL_EMAILS/CAMPAIGN_DURATION
-    MAILBOX_NEEDED_BY_MAILFORGE = calculate_num_mailbox(NUMBER_EMAILS_SENT_PER_MONTH)
-    DOMAINS_NEEDED = math.ceil(MAILBOX_NEEDED_BY_MAILFORGE / MAILBOXES_PER_DOMAIN)
-    MONTHLY_COST_FOR_MAILBOX = MAILBOX_NEEDED_BY_MAILFORGE * COST_PER_MAILBOX_PER_MONTH
-    MONTHLY_COST_FOR_DOMAIN = DOMAINS_NEEDED * COST_PER_DOMAIN
-    MONTHLY_COST  = MONTHLY_COST_FOR_MAILBOX + MONTHLY_COST_FOR_DOMAIN
-    TOTAL_COST_MAILFORGE = MONTHLY_COST * (CAMPAIGN_DURATION + 1) # For warmup
-    TOTAL_COST_SOCIAL_MEDIA = SOCIAL_MEDIA_COST_DIC[SOCIAL_MEDIA_CAMPAIGN_TO_INCLUDE] * NUM_OF_LEADS
+    results = calculate_roi()
     
-    TOTAL_COST = int((TOTAL_COST_MAILFORGE + TOTAL_COST_SOCIAL_MEDIA ) * 1.8)
-
-    col11, col12 = st.columns(2)
-    with col11:
-        st.metric("Emails sent / day", int(EMAILS_PER_SENDING_DAY))
-    with col12:
-        st.metric("Total emails to be sent", TOTAL_EMAILS)
-    col21, col22, col23 = st.columns(3)
-    with col21:
-        st.metric("Total cost mailforge ", "$" + str(TOTAL_COST_MAILFORGE))
-    with col22:
-        st.metric("Total cost social media", "$" + str(TOTAL_COST_SOCIAL_MEDIA))
-    with col23:
-        st.metric("Total cost","$" + str(TOTAL_COST))
-
-
+    st.markdown("<h2>Results</h2>", unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Total emails", f"{results['total_emails']:,}")
+        st.metric("Emails per day", f"{results['emails_per_day']:,}")
+    #with col2:
+        # st.metric("Mailboxes needed", results['mailboxes_needed'])
+        # st.metric("Domains needed", results['domains_needed'])
+    
+    st.markdown("<h3>Pricing</h3>", unsafe_allow_html=True)
+    st.metric("Monthly price", f"${results['monthly_monthly_paying_client_pricing']:.2f}")
+    
+    # Display different plans
+    st.markdown("<h3>Plans</h3>", unsafe_allow_html=True)
+    plans = {
+        "Basic":5,
+        "Pro": 7,
+        "Enterprise": 9
+    }
+    
+    for plan, multiplier in plans.items():
+        plan_price = results['monthly_monthly_paying_client_pricing'] * multiplier
+        st.metric(f"{plan} Plan", f"${plan_price:.2f}/month")
