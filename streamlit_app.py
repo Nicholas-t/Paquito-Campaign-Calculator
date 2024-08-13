@@ -98,11 +98,23 @@ def calculate_roi():
     mailboxes_needed = math.ceil(emails_per_day / email_limit_per_day)
     domains_needed = math.ceil(mailboxes_needed / mailboxes_per_domain)
     
-    monthly_cost_mailboxes = mailboxes_needed * cost_per_mailbox_per_month
-    monthly_cost_domains = domains_needed * cost_per_domain
+    # Mailforge, Google, Outlook
+    mailboxes_needed_list = [mailboxes_needed / 3] * 3
+    domains_needed_list = [domains_needed / 3] * 3
+    mailboxes_price = [3, 6, 6] # Price for mailforge, google, outlook
+    monthly_cost_mailbox_list = [num_mb * pr for (num_mb, pr) in zip(mailboxes_needed_list, mailboxes_price)]
+    monthly_cost_domain_list = [num_dom * cost_per_domain for num_dom in domains_needed_list]
+    print("Mailbox needed  MF, Google, Outlook : {}".format(", ".join(mailboxes_needed_list)))
+    print("Domains needed  MF, Google, Outlook : {}".format(", ".join(mailboxes_needed_list)))
+
+    monthly_cost_mailboxes = sum(monthly_cost_mailbox_list) #mailboxes_needed * cost_per_mailbox_per_month
+    monthly_cost_domains = sum(monthly_cost_domain_list) #domains_needed * cost_per_domain
     
     total_monthly_cost = monthly_cost_mailboxes + monthly_cost_domains
-    
+    total_cost = total_monthly_cost * campaign_duration
+
+    cost_per_lead = total_cost / num_leads
+
     # Apply 80% margin
     monthly_monthly_paying_client_pricing = total_monthly_cost * 3
     
